@@ -1,8 +1,13 @@
 .DS_Store
 
+# out
+lib
+
+# misc
+artifacts
+
 # Node.js
 node_modules
-dist
 *.log
 
 # https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
