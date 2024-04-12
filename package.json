@@ -6,7 +6,9 @@
   "scripts": {
     "build": "rimraf ./lib && swc src --config-file .swcrc -d lib && tsc --emitDeclarationOnly && prettier --write ."
   },
-  "dependencies": {},
+  "dependencies": {
+    "fast-glob": "^3.3.2"
+  },
   "devDependencies": {
     "@swc/cli": "^0.3.12",
     "@swc/core": "^1.4.13",
