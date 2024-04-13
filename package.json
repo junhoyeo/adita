@@ -1,9 +1,16 @@
 {
   "name": "adita",
-  "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
+  "bin": {
+    "adita": "./bin/run"
+  },
+  "files": [
+    "/bin",
+    "/lib"
+  ],
   "scripts": {
+    "start": "./bin/run",
     "build": "rimraf ./lib && swc src --config-file .swcrc -d lib && tsc --emitDeclarationOnly && prettier --write ."
   },
   "dependencies": {
