@@ -1,8 +1,9 @@
 import { glob } from 'fast-glob';
-import { writeFileSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { basename as basenamePath, extname, join as joinPath } from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as ts from 'typescript';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 import { createContractFileForAbi } from './codegen';
 
@@ -14,18 +15,26 @@ process.on('uncaughtException', function (err) {
 const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
 const main = async () => {
-  console.log(process.argv);
-  const input = process.argv[2];
-  const source = joinPath(input, '**/*.json');
+  const argv = await yargs(hideBin(process.argv))
+    .option('source', { type: 'string' })
+    .demandOption('source')
+    .option('out-dir', { type: 'string' })
+    .default('out-dir', './abis')
+    .parse();
 
+  const source = path.join(argv.source, '**/*.json');
   const entries = await glob([source], {
     dot: true,
     ignore: ['**/*.dbg.json'],
   });
 
+  if (!fs.existsSync(argv.outDir)) {
+    await fs.promises.mkdir(argv.outDir, { recursive: true });
+  }
+
   await Promise.all(
     entries.map(async (entry) => {
-      const data = JSON.parse(await readFile(entry, 'utf8'));
+      const data = JSON.parse(await fs.promises.readFile(entry, 'utf8'));
       if (Object.hasOwn(data, 'abi')) {
         const abis = data.abi;
         console.log(entry);
@@ -35,8 +44,8 @@ const main = async () => {
           return [];
         }
 
-        const fileName = basenamePath(entry, extname(entry));
-        const outputFile = `./out/${fileName}.ts`;
+        const fileName = path.basename(entry, path.extname(entry));
+        const outputFile = path.join(argv.outDir, `${fileName}.ts`);
         const fileObj = ts.createSourceFile(
           outputFile,
           '',
@@ -47,7 +56,7 @@ const main = async () => {
         const lineStrings = lineNodes.map((node) =>
           printer.printNode(ts.EmitHint.Unspecified, node, fileObj),
         );
-        writeFileSync(outputFile, lineStrings.join('\n'));
+        await fs.promises.writeFile(outputFile, lineStrings.join('\n'));
       }
     }),
   );
