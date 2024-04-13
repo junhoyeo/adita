@@ -5,6 +5,7 @@ lib
 
 # misc
 artifacts
+out
 
 # Node.js
 node_modules
