@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "start": "./bin/run",
-    "build": "rimraf ./lib && swc src --config-file .swcrc -d lib && tsc --emitDeclarationOnly && prettier --write ."
+    "build": "rimraf ./lib && swc src -d lib --config-file .swcrc --strip-leading-paths && tsc --emitDeclarationOnly && prettier --write ."
   },
   "dependencies": {
     "fast-glob": "^3.3.2",
