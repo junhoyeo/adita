@@ -35,29 +35,31 @@ const main = async () => {
   await Promise.all(
     entries.map(async (entry) => {
       const data = JSON.parse(await fs.promises.readFile(entry, 'utf8'));
-      if (Object.hasOwn(data, 'abi')) {
-        const abis = data.abi;
-        console.log(entry);
-
-        const lineNodes = createContractFileForAbi(abis);
-        if (Array.isArray(lineNodes) && lineNodes.length === 0) {
-          return [];
-        }
-
-        const fileName = path.basename(entry, path.extname(entry));
-        const outputFile = path.join(argv.outDir, `${fileName}.ts`);
-        const fileObj = ts.createSourceFile(
-          outputFile,
-          '',
-          ts.ScriptTarget.ESNext,
-          false,
-          ts.ScriptKind.TS,
-        );
-        const lineStrings = lineNodes.map((node) =>
-          printer.printNode(ts.EmitHint.Unspecified, node, fileObj),
-        );
-        await fs.promises.writeFile(outputFile, lineStrings.join('\n'));
+      if (!Object.hasOwn(data, 'abi')) {
+        return;
       }
+
+      const abis = data.abi;
+      console.log(entry);
+
+      const lineNodes = createContractFileForAbi(abis);
+      if (Array.isArray(lineNodes) && lineNodes.length === 0) {
+        return;
+      }
+
+      const fileName = path.basename(entry, path.extname(entry));
+      const outputFile = path.join(argv.outDir, `${fileName}.ts`);
+      const fileObj = ts.createSourceFile(
+        outputFile,
+        '',
+        ts.ScriptTarget.ESNext,
+        false,
+        ts.ScriptKind.TS,
+      );
+      const lineStrings = lineNodes.map((node) =>
+        printer.printNode(ts.EmitHint.Unspecified, node, fileObj),
+      );
+      await fs.promises.writeFile(outputFile, lineStrings.join('\n'));
     }),
   );
 };
