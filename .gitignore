@@ -5,7 +5,7 @@ lib
 
 # misc
 artifacts
-out
+abis
 
 # Node.js
 node_modules
