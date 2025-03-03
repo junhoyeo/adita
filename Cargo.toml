@@ -1,0 +1,29 @@
+[package]
+name = "adita"
+version = "0.1.0"
+edition = "2021"
+authors = ["Junho Yeo <i@junho.io>"]
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+
+indicatif = "0.17"
+console = "0.15"
+
+log = "0.4"
+env_logger = "0.10"
+
+glob = "0.3"
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+rayon = "1.8"
+thiserror = "1.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+strip = true
