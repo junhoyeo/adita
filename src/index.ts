@@ -1,7 +1,7 @@
 import { glob } from 'fast-glob';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
