@@ -2,9 +2,7 @@
   "name": "adita",
   "version": "0.1.1",
   "license": "MIT",
-  "bin": {
-    "adita": "./bin/run"
-  },
+  "bin": "./bin/run",
   "files": [
     "/bin",
     "/lib"
