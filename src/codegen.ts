@@ -39,19 +39,27 @@ const createObjectFromObject = (fragment: object) => {
 
 export interface Fragment {
   name?: string;
-  type: 'receive' | 'constructor' | 'fallback';
+  type: string;
   inputs: Array<{
     name?: string;
     type: string;
+    indexed?: boolean;
+    internalType?: string;
   }>;
+  outputs?: Array<{
+    name?: string;
+    type: string;
+    internalType?: string;
+  }>;
+  stateMutability?: string;
+  anonymous?: boolean;
 }
 
 const createFragmentDeclaration = (
   fragment: Fragment,
   options?: { explicitIdentifier?: boolean },
-): [ts.Identifier, ts.ParameterDeclaration] => {
+): [ts.Identifier, ts.VariableStatement] => {
   let identifierString = fragment['name'];
-
   if (!identifierString) {
     throw new Error(
       `Unable to create Identifier for Fragment: ${JSON.stringify(fragment)}`,
@@ -66,18 +74,22 @@ const createFragmentDeclaration = (
 
   const identifier = ts.factory.createIdentifier(identifierString);
 
-  const expression = ts.factory.createParameterDeclaration(
-    [
-      ts.factory.createToken(ts.SyntaxKind.ExportKeyword),
-      ts.factory.createToken(ts.SyntaxKind.ConstKeyword),
-    ],
-    undefined,
-    identifier,
-    undefined,
-    undefined,
-    ts.factory.createAsExpression(
-      createObjectFromObject(fragment),
-      ts.factory.createKeywordTypeNode(ts.SyntaxKind.ConstKeyword as any),
+  const expression = ts.factory.createVariableStatement(
+    [ts.factory.createToken(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          identifier,
+          undefined,
+          undefined,
+          ts.factory.createAsExpression(
+            createObjectFromObject(fragment),
+            // @ts-ignore
+            ts.factory.createKeywordTypeNode(ts.SyntaxKind.ConstKeyword),
+          ),
+        ),
+      ],
+      ts.NodeFlags.Const,
     ),
   );
 
@@ -88,36 +100,51 @@ export const createContractFileForAbi = (
   abis: Array<Fragment>,
 ): Array<ts.Node> => {
   const filteredAbi: any[] = abis.filter((fragment) => !!fragment.name);
-  const nameCounts = filteredAbi
-    .map((fragment) => fragment.name)
-    .reduce((acc, cur) => {
-      if (acc[cur]) {
-        acc[cur] += 1;
-      } else {
-        acc[cur] = 1;
-      }
-      return acc;
-    }, []);
+
+  const nameCounts: Record<string, number> = {};
+
+  filteredAbi.forEach((fragment) => {
+    const name = fragment.name || '';
+    if (nameCounts[name]) {
+      nameCounts[name] += 1;
+    } else {
+      nameCounts[name] = 1;
+    }
+  });
 
   const fragmentDeclarationIdentifiers: Array<ts.Identifier> = [];
-  const fragmentDeclarations: Array<ts.ParameterDeclaration> = filteredAbi.map(
-    (fragment) => {
+  const fragmentDeclarations: Array<ts.VariableStatement> = [];
+
+  const processedFragments = new Set<string>();
+
+  filteredAbi.forEach((fragment) => {
+    const name = fragment.name || '';
+    const fragmentKey = JSON.stringify(fragment);
+
+    if (!processedFragments.has(fragmentKey)) {
+      processedFragments.add(fragmentKey);
+
       const [identifier, declaration] = createFragmentDeclaration(fragment, {
-        explicitIdentifier: nameCounts[fragment.name] > 1,
+        explicitIdentifier: nameCounts[name] > 1,
       });
+
       fragmentDeclarationIdentifiers.push(identifier);
-      return declaration;
-    },
-  );
+      fragmentDeclarations.push(declaration);
+    }
+  });
 
   if (fragmentDeclarationIdentifiers.length === 0) return [];
 
   const exportDefault = ts.factory.createExportAssignment(
-    [ts.factory.createToken(ts.SyntaxKind.DefaultKeyword)],
-    false,
+    [ts.factory.createToken(ts.SyntaxKind.ExportKeyword)],
+    undefined,
     ts.factory.createAsExpression(
-      ts.factory.createArrayLiteralExpression(fragmentDeclarationIdentifiers),
-      ts.factory.createKeywordTypeNode(ts.SyntaxKind.ConstKeyword as any),
+      ts.factory.createArrayLiteralExpression(
+        fragmentDeclarationIdentifiers,
+        false,
+      ),
+      // @ts-ignore
+      ts.factory.createKeywordTypeNode(ts.SyntaxKind.ConstKeyword),
     ),
   );
 
